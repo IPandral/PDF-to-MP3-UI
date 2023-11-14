@@ -9,6 +9,23 @@ from PyQt5.QtWidgets import (
 )
 from threading import Thread
 
+# Define a stylesheet
+stylesheet = """
+    QPushButton {
+        background-color: #333;
+        color: #fff;
+        border-radius: 10px;
+        padding: 5px 10px;
+    }
+    QPushButton:hover {
+        background-color: #666;
+    }
+    QLabel {
+        color: #333;
+        font-size: 16px;
+    }
+"""
+
 class PDFtoMP3Converter(QMainWindow):
     conversion_complete_signal = pyqtSignal(str)  # Signal to indicate conversion is complete
 
@@ -117,9 +134,14 @@ class PDFtoMP3Converter(QMainWindow):
         else:  # Linux
             subprocess.Popen(['xdg-open', path])
 
-
 if __name__ == '__main__':
+    # Create a QApplication instance and apply the stylesheet
     app = QApplication(sys.argv)
+    app.setStyleSheet(stylesheet)
+
+    # Create an instance of your application and show it
     window = PDFtoMP3Converter()
     window.show()
+
+    # Run the application
     sys.exit(app.exec_())
