@@ -2,11 +2,13 @@ import sys
 import os
 import subprocess
 import pyttsx3
+import requests
 from PyPDF2 import PdfReader
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox
 )
+from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 
 # Define a stylesheet
@@ -32,6 +34,8 @@ class PDFtoMP3Converter(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.check_for_updates()
+        self.setAcceptDrops(True)
         self.setWindowTitle("PDF to MP3")
         self.setGeometry(100, 100, 280, 170)
 
@@ -68,11 +72,56 @@ class PDFtoMP3Converter(QMainWindow):
 
         self.conversion_complete_signal.connect(self.on_conversion_complete)
 
+    def check_for_updates(self):
+        response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
+        latest_version = response.json()['tag_name']
+
+        current_version = 'v1.0.2'  # Replace with your current version
+
+        if latest_version != current_version:
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Update available")
+            msg_box.setText(f"A new version ({latest_version}) is available.")
+            download_button = msg_box.addButton("Download", QMessageBox.ActionRole)
+            download_button.clicked.connect(self.open_download_link)
+            msg_box.addButton("Skip for now", QMessageBox.RejectRole)
+            msg_box.exec_()
+
+    def open_download_link(self):
+        QDesktopServices.openUrl(QUrl("https://github.com/IPandral/PDF-to-MP3-UI/releases/latest"))
+
+    def dragEnterEvent(self, event):
+        # Accept the drag event if the dragged item is a PDF file
+        if event.mimeData().hasUrls():
+            url = event.mimeData().urls()[0].toLocalFile()
+            if url.endswith('.pdf'):
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        # Get the path of the dropped PDF file
+        url = event.mimeData().urls()[0].toLocalFile()
+        self.pdf_file_path = url
+        self.pdf_path_label.setText(f"Selected PDF: {os.path.basename(url)}")
+
+        # Set the output directory to the directory of the input file if no output directory has been selected yet
+        if not hasattr(self, 'output_dir_path') or not self.output_dir_path:
+            self.output_dir_path = os.path.dirname(url)
+            self.output_path_label.setText(f"Output Folder: {os.path.dirname(url)}")
+
     def select_pdf(self):
         pdf_file, _ = QFileDialog.getOpenFileName(self, "Select PDF", "", "PDF files (*.pdf)")
         if pdf_file:
             self.pdf_path_label.setText(pdf_file)
             self.pdf_file_path = pdf_file
+
+            # Set the output directory to the directory of the input file if no output directory has been selected yet
+            if not hasattr(self, 'output_dir_path') or not self.output_dir_path:
+                self.output_dir_path = os.path.dirname(pdf_file)
+                self.output_path_label.setText(f"Output Folder: {os.path.dirname(pdf_file)}")
 
     def select_output(self):
         output_path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
