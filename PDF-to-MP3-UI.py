@@ -3,10 +3,11 @@ import os
 import subprocess
 import pyttsx3
 import requests
+import webbrowser
 from PyPDF2 import PdfReader
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox
+    QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction
 )
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
@@ -40,6 +41,25 @@ class PDFtoMP3Converter(QMainWindow):
         self.setGeometry(100, 100, 280, 170)
 
         layout = QVBoxLayout()
+
+        self.help_action = QAction('Help', self)
+        self.help_action.triggered.connect(self.open_user_manual)
+
+        self.license_action = QAction('License', self)
+        self.license_action.triggered.connect(lambda: webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/blob/main/LICENSE'))
+
+        self.about_action = QAction('About', self)
+        self.about_action.triggered.connect(lambda: webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/wiki/About'))
+
+        menu_bar = self.menuBar()
+        help_menu = menu_bar.addMenu('Help')
+        help_menu.addAction(self.help_action)
+
+        license_menu = menu_bar.addMenu('License')
+        license_menu.addAction(self.license_action)
+
+        about_menu = menu_bar.addMenu('About')
+        about_menu.addAction(self.about_action)
 
         self.title_label = QLabel("PDF to MP3", self)
         self.title_label.setAlignment(Qt.AlignCenter)
@@ -76,7 +96,7 @@ class PDFtoMP3Converter(QMainWindow):
         response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
         latest_version = response.json()['tag_name']
 
-        current_version = 'v1.0.2'  # Replace with your current version
+        current_version = 'v1.0.3'  # Replace with your current version
 
         if latest_version != current_version:
             msg_box = QMessageBox(self)
@@ -182,6 +202,9 @@ class PDFtoMP3Converter(QMainWindow):
             subprocess.Popen(['open', path])
         else:  # Linux
             subprocess.Popen(['xdg-open', path])
+    
+    def open_user_manual(self):
+        webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/wiki/User-Manual-for-PDF-to-MP3-Converter')
 
 if __name__ == '__main__':
     # Create a QApplication instance and apply the stylesheet
