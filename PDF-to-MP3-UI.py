@@ -77,10 +77,10 @@ class PDFtoMP3Converter(QMainWindow):
         self.select_pdf_button.clicked.connect(self.select_pdf)
         layout.addWidget(self.select_pdf_button)
 
-        self.pdf_folder_path = QLabel("Select a PDF Folder", self)
+        self.pdf_folder_path = QLabel("Select a folder of PDF's", self)
         layout.addWidget(self.pdf_folder_path)
 
-        self.select_pdf_folder_button = QPushButton("Select PDF Folder", self)
+        self.select_pdf_folder_button = QPushButton("Select a folder of PDF's", self)
         self.select_pdf_folder_button.clicked.connect(self.select_pdf_folder)
         layout.addWidget(self.select_pdf_folder_button)
 
@@ -108,7 +108,7 @@ class PDFtoMP3Converter(QMainWindow):
         response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
         latest_version = response.json()['tag_name']
 
-        current_version = 'v1.0.4'  # Replace with your current version
+        current_version = 'v1.0.5'  # Replace with your current version
 
         if latest_version != current_version:
             msg_box = QMessageBox(self)
@@ -174,7 +174,7 @@ class PDFtoMP3Converter(QMainWindow):
 
     def clear_fields(self):
         self.pdf_path_label.setText("Select a PDF file")
-        self.pdf_folder_path.setText("Select a PDF Folder")
+        self.pdf_folder_path.setText("Select a folder of PDF's")
         self.output_path_label.setText("Select Output Folder")
         self.pdf_file_path = ""
         self.output_dir_path = ""
@@ -263,4 +263,4 @@ if __name__ == '__main__':
     # Run the application
     sys.exit(app.exec_())
 
-#Last updated: Monday, 04. December 2023 02:02, +08:00
+#Last updated: Friday, 29. December 2023 23:38, +08:00
