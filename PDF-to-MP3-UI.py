@@ -6,11 +6,10 @@ import requests
 import webbrowser
 from PyPDF2 import PdfReader
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction
-)
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction, QTextEdit
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
+import vlc
 
 # Define a stylesheet
 stylesheet = """
@@ -34,6 +33,11 @@ class PDFtoMP3Converter(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        # Create a QTextEdit widget for displaying PDF text
+        self.text_display = QTextEdit(self)
+        self.text_display.setReadOnly(True)
+        self.text_display.setGeometry(10, 100, 780, 500)
 
         self.check_for_updates()
         self.setAcceptDrops(True)
@@ -103,6 +107,41 @@ class PDFtoMP3Converter(QMainWindow):
         self.output_dir_path = None
 
         self.conversion_complete_signal.connect(self.on_conversion_complete)
+    
+    def play_audio(self):
+        if self.media_player.is_playing():
+            self.media_player.pause()
+            self.play_button.setText('Play')
+        else:
+            if self.pdf_file_path and self.output_dir_path:
+                pdf_file_name = os.path.basename(self.pdf_file_path)
+                base_name = os.path.splitext(pdf_file_name)[0]
+                audio_file_path = os.path.join(self.output_dir_path, f'{base_name}.mp3')
+                if os.path.exists(audio_file_path):
+                    self.media_player.set_media(vlc.Media(audio_file_path))
+                    self.media_player.play()
+                    self.play_button.setText('Pause')
+                else:
+                    QMessageBox.warning(self, "File Not Found", "The corresponding MP3 file was not found.")
+            else:
+                QMessageBox.warning(self, "No File Selected", "Please select a PDF file and output directory first.")
+
+    def on_conversion_complete(self, output_dir_path):
+        # Assuming the .txt file has the same name as the PDF, find the first .txt file in the output directory
+        for file in os.listdir(output_dir_path):
+            if file.endswith('.txt'):
+                txt_file_path = os.path.join(output_dir_path, file)
+                self.load_text_file(txt_file_path)
+                break
+
+    def load_text_file(self, file_path):
+        # Read from the .txt file and display its contents
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text = file.read()
+                self.text_display.setText(text)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load text file: {e}")
 
     def check_for_updates(self):
         response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
@@ -234,11 +273,17 @@ class PDFtoMP3Converter(QMainWindow):
             self.conversion_complete_signal.emit(str(e))  # Emit the error
 
 
-    def on_conversion_complete(self, output_subfolder_path):
-        QMessageBox.information(self, "Conversion Complete", "The PDF has been converted to MP3.")
-        self.open_output_folder(output_subfolder_path)
-        self.convert_button.setEnabled(True)  # Re-enable the convert button
-        self.clear_fields()
+    def on_conversion_complete(self, output_dir_path):
+        result = QMessageBox.question(self, "Conversion Complete", "The conversion is complete. Do you want to open the audio player?", QMessageBox.Yes | QMessageBox.No)
+        
+        if result == QMessageBox.Yes:
+            if self.pdf_file_path:
+                pdf_file_name = os.path.basename(self.pdf_file_path)
+                base_name = os.path.splitext(pdf_file_name)[0]
+                audio_file_path = os.path.join(output_dir_path, f'{base_name}.mp3')
+                
+                self.audio_player_window = AudioPlayerWindow(audio_file_path)
+                self.audio_player_window.show()
 
     def open_output_folder(self, path):
         if sys.platform == 'win32':
@@ -250,6 +295,65 @@ class PDFtoMP3Converter(QMainWindow):
     
     def open_user_manual(self):
         webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/wiki/User-Manual-for-PDF-to-MP3-Converter')
+
+class AudioPlayerWindow(QMainWindow):
+    def __init__(self, audio_file_path, parent=None):
+        super().__init__(parent)
+
+        self.media_player = vlc.MediaPlayer()
+        self.audio_file_path = audio_file_path
+
+        self.setWindowTitle("Audio Player")
+        self.setGeometry(300, 300, 300, 200)
+
+        layout = QVBoxLayout()
+
+        self.play_button = QPushButton("Play", self)
+        self.play_button.clicked.connect(self.toggle_audio_playback)
+        layout.addWidget(self.play_button)
+
+        self.restart_button = QPushButton("Restart", self)
+        self.restart_button.clicked.connect(self.restart_audio)
+        layout.addWidget(self.restart_button)
+
+        self.backward_button = QPushButton("Backward 10s", self)
+        self.backward_button.clicked.connect(self.backward_audio)
+        layout.addWidget(self.backward_button)
+
+        self.forward_button = QPushButton("Forward 10s", self)
+        self.forward_button.clicked.connect(self.forward_audio)
+        layout.addWidget(self.forward_button)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+    def toggle_audio_playback(self):
+        if self.media_player.is_playing():
+            self.media_player.pause()
+            self.play_button.setText('Play')
+        else:
+            if not self.media_player.get_media():
+                self.media_player.set_media(vlc.Media(self.audio_file_path))
+            self.media_player.play()
+            self.play_button.setText('Pause')
+
+    def restart_audio(self):
+        self.media_player.stop()
+        self.play_button.setText('Play')
+
+    def backward_audio(self):
+        if self.media_player.is_playing() or self.media_player.get_time() > 0:
+            # Go back 10 seconds
+            new_time = max(self.media_player.get_time() - 10000, 0)
+            self.media_player.set_time(new_time)
+
+    def forward_audio(self):
+        if self.media_player.is_playing() or self.media_player.get_time() > 0:
+            # Go forward 10 seconds
+            total_length = self.media_player.get_length()
+            new_time = min(self.media_player.get_time() + 10000, total_length)
+            self.media_player.set_time(new_time)
 
 if __name__ == '__main__':
     # Create a QApplication instance and apply the stylesheet
