@@ -355,6 +355,12 @@ class AudioPlayerWindow(QMainWindow):
             new_time = min(self.media_player.get_time() + 10000, total_length)
             self.media_player.set_time(new_time)
 
+    def closeEvent(self, event):
+        # This method is called when the window is closed
+        if self.media_player.is_playing():
+            self.media_player.stop()
+        event.accept()  # Accept the close event
+
 if __name__ == '__main__':
     # Create a QApplication instance and apply the stylesheet
     app = QApplication(sys.argv)
