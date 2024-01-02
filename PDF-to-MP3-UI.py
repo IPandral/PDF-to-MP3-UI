@@ -6,7 +6,7 @@ import requests
 import webbrowser
 from PyPDF2 import PdfReader
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction, QTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 import vlc
@@ -33,11 +33,6 @@ class PDFtoMP3Converter(QMainWindow):
 
     def __init__(self):
         super().__init__()
-
-        # Create a QTextEdit widget for displaying PDF text
-        self.text_display = QTextEdit(self)
-        self.text_display.setReadOnly(True)
-        self.text_display.setGeometry(10, 100, 780, 500)
 
         self.check_for_updates()
         self.setAcceptDrops(True)
@@ -107,41 +102,6 @@ class PDFtoMP3Converter(QMainWindow):
         self.output_dir_path = None
 
         self.conversion_complete_signal.connect(self.on_conversion_complete)
-    
-    def play_audio(self):
-        if self.media_player.is_playing():
-            self.media_player.pause()
-            self.play_button.setText('Play')
-        else:
-            if self.pdf_file_path and self.output_dir_path:
-                pdf_file_name = os.path.basename(self.pdf_file_path)
-                base_name = os.path.splitext(pdf_file_name)[0]
-                audio_file_path = os.path.join(self.output_dir_path, f'{base_name}.mp3')
-                if os.path.exists(audio_file_path):
-                    self.media_player.set_media(vlc.Media(audio_file_path))
-                    self.media_player.play()
-                    self.play_button.setText('Pause')
-                else:
-                    QMessageBox.warning(self, "File Not Found", "The corresponding MP3 file was not found.")
-            else:
-                QMessageBox.warning(self, "No File Selected", "Please select a PDF file and output directory first.")
-
-    def on_conversion_complete(self, output_dir_path):
-        # Assuming the .txt file has the same name as the PDF, find the first .txt file in the output directory
-        for file in os.listdir(output_dir_path):
-            if file.endswith('.txt'):
-                txt_file_path = os.path.join(output_dir_path, file)
-                self.load_text_file(txt_file_path)
-                break
-
-    def load_text_file(self, file_path):
-        # Read from the .txt file and display its contents
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                text = file.read()
-                self.text_display.setText(text)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load text file: {e}")
 
     def check_for_updates(self):
         response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
@@ -272,7 +232,6 @@ class PDFtoMP3Converter(QMainWindow):
         except Exception as e:
             self.conversion_complete_signal.emit(str(e))  # Emit the error
 
-
     def on_conversion_complete(self, output_dir_path):
         result = QMessageBox.question(self, "Conversion Complete", "The conversion is complete. Do you want to open the audio player?", QMessageBox.Yes | QMessageBox.No)
         
@@ -281,7 +240,6 @@ class PDFtoMP3Converter(QMainWindow):
                 pdf_file_name = os.path.basename(self.pdf_file_path)
                 base_name = os.path.splitext(pdf_file_name)[0]
                 audio_file_path = os.path.join(output_dir_path, f'{base_name}.mp3')
-                
                 self.audio_player_window = AudioPlayerWindow(audio_file_path)
                 self.audio_player_window.show()
 
@@ -292,7 +250,7 @@ class PDFtoMP3Converter(QMainWindow):
             subprocess.Popen(['open', path])
         else:  # Linux
             subprocess.Popen(['xdg-open', path])
-    
+
     def open_user_manual(self):
         webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/wiki/User-Manual-for-PDF-to-MP3-Converter')
 
@@ -373,4 +331,4 @@ if __name__ == '__main__':
     # Run the application
     sys.exit(app.exec_())
 
-#Last updated: Tuesday, 02. January 2024 21:31, +08:00
+#Last updated: Tuesday, 02. January 2024 22:02, +08:00
