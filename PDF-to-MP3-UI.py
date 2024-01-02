@@ -6,7 +6,7 @@ import requests
 import webbrowser
 from PyPDF2 import PdfReader
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QFileDialog, QMessageBox, QAction, QSlider
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 import vlc
@@ -282,6 +282,17 @@ class AudioPlayerWindow(QMainWindow):
         self.forward_button.clicked.connect(self.forward_audio)
         layout.addWidget(self.forward_button)
 
+        self.volume_controls = QLabel("Volume Controls", self)
+        layout.addWidget(self.volume_controls)
+
+        # Volume slider
+        self.volume_slider = QSlider(Qt.Horizontal, self)
+        self.volume_slider.setMinimum(0)
+        self.volume_slider.setMaximum(100)
+        self.volume_slider.setValue(100)  # Default volume
+        self.volume_slider.valueChanged.connect(self.set_volume)
+        layout.addWidget(self.volume_slider)
+
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
@@ -312,6 +323,9 @@ class AudioPlayerWindow(QMainWindow):
             total_length = self.media_player.get_length()
             new_time = min(self.media_player.get_time() + 10000, total_length)
             self.media_player.set_time(new_time)
+
+    def set_volume(self, volume):
+        self.media_player.audio_set_volume(volume)
 
     def closeEvent(self, event):
         # This method is called when the window is closed
