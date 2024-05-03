@@ -14,6 +14,9 @@ The application offers a straightforward UI where users can:
 
 Upon completion, the application will automatically open the output folder, displaying the newly created MP3 file and its corresponding text transcript.
 
+## Known Issues
+DOES NOT SUPPORT MACOS: i am trying my hardest to fix this i have never had a mac before so i only have just got my hands on one give me a couple of weeks to make sure it is compatable on both mac and windows
+
 ## Usage
 
 Simply run the `PDF-to-MP3-UI.exe` executable file, and follow the on-screen instructions to select a PDF and an output directory. The rest is handled by the application.
