@@ -11,23 +11,6 @@ from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 import vlc
 
-# Define a stylesheet
-stylesheet = """
-    QPushButton {
-        background-color: #333;
-        color: #fff;
-        border-radius: 10px;
-        padding: 5px 10px;
-    }
-    QPushButton:hover {
-        background-color: #666;
-    }
-    QLabel {
-        color: #333;
-        font-size: 16px;
-    }
-"""
-
 class PDFtoMP3Converter(QMainWindow):
     conversion_complete_signal = pyqtSignal(str)  # Signal to indicate conversion is complete
 
@@ -200,37 +183,29 @@ class PDFtoMP3Converter(QMainWindow):
         try:
             speaker = pyttsx3.init()
             pdf_file = os.path.basename(pdf_path)
-            pdf_file_name = os.path.splitext(pdf_file)[0]  # Get the file name without the extension
+            pdf_file_name = os.path.splitext(pdf_file)[0]
 
-            # Create a single output directory for all conversions
-            output_dir_name = "Converted_PDFs"
-            output_dir_path = os.path.join(output_dir, output_dir_name)
-            counter = 1
-            while os.path.exists(output_dir_path):
-                output_dir_path = os.path.join(output_dir, f"{output_dir_name}_{counter}")
-                counter += 1
-            os.makedirs(output_dir_path, exist_ok=True)
+            output_dir_path = os.path.join(output_dir, "Converted_PDFs")
+            if not os.path.exists(output_dir_path):
+                os.makedirs(output_dir_path, exist_ok=True)
+
+            audio_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.mp3')
+            transcript_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.txt')
 
             with open(pdf_path, 'rb') as book:
                 pdfReader = PdfReader(book)
-                text = ''
-                for page in pdfReader.pages:
-                    text += page.extract_text() or ''  # Add or '' to handle None return on empty pages
+                text = ''.join(page.extract_text() or '' for page in pdfReader.pages)
 
-            # Save the audio file in the output directory
-            audio_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.mp3')
             speaker.save_to_file(text, audio_file_path)
             speaker.runAndWait()
 
-            # Save the transcript in the output directory
-            transcript_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.txt')
             with open(transcript_file_path, 'w', encoding='utf-8') as transcript_file:
                 transcript_file.write(text)
 
-            # Emit the completion signal with the path of the output directory
             self.conversion_complete_signal.emit(output_dir_path)
         except Exception as e:
-            self.conversion_complete_signal.emit(str(e))  # Emit the error
+            self.conversion_complete_signal.emit(str(e))
+
 
     def on_conversion_complete(self, output_dir_path):
         result = QMessageBox.question(self, "Conversion Complete", "The conversion is complete. Do you want to open the audio player?", QMessageBox.Yes | QMessageBox.No)
@@ -336,7 +311,6 @@ class AudioPlayerWindow(QMainWindow):
 if __name__ == '__main__':
     # Create a QApplication instance and apply the stylesheet
     app = QApplication(sys.argv)
-    app.setStyleSheet(stylesheet)
 
     # Create an instance of your application and show it
     window = PDFtoMP3Converter()
