@@ -1,0 +1,3 @@
+([('PDFtoMP3UI',
+   '/Users/matthew/Documents/GitHub/PDF-to-MP3-UI/dist/PDFtoMP3UI',
+   'EXECUTABLE')],)

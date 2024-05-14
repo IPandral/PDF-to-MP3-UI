@@ -1,7 +1,6 @@
 import sys
 import os
 import subprocess
-import pyttsx3
 import requests
 import webbrowser
 from PyPDF2 import PdfReader
@@ -10,23 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBo
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 import vlc
-
-# Define a stylesheet
-stylesheet = """
-    QPushButton {
-        background-color: #333;
-        color: #fff;
-        border-radius: 10px;
-        padding: 5px 10px;
-    }
-    QPushButton:hover {
-        background-color: #666;
-    }
-    QLabel {
-        color: #333;
-        font-size: 16px;
-    }
-"""
+from gtts import gTTS
 
 class PDFtoMP3Converter(QMainWindow):
     conversion_complete_signal = pyqtSignal(str)  # Signal to indicate conversion is complete
@@ -37,7 +20,7 @@ class PDFtoMP3Converter(QMainWindow):
         self.check_for_updates()
         self.setAcceptDrops(True)
         self.setWindowTitle("PDF to MP3")
-        self.setGeometry(100, 100, 280, 170)
+        self.setGeometry(100, 100, 280, 220)
 
         layout = QVBoxLayout()
 
@@ -76,10 +59,10 @@ class PDFtoMP3Converter(QMainWindow):
         self.select_pdf_button.clicked.connect(self.select_pdf)
         layout.addWidget(self.select_pdf_button)
 
-        self.pdf_folder_path = QLabel("Select a folder of PDF's", self)
+        self.pdf_folder_path = QLabel("Select a folder of PDFs", self)
         layout.addWidget(self.pdf_folder_path)
 
-        self.select_pdf_folder_button = QPushButton("Select a folder of PDF's", self)
+        self.select_pdf_folder_button = QPushButton("Select a folder of PDFs", self)
         self.select_pdf_folder_button.clicked.connect(self.select_pdf_folder)
         layout.addWidget(self.select_pdf_folder_button)
 
@@ -94,6 +77,10 @@ class PDFtoMP3Converter(QMainWindow):
         self.convert_button.clicked.connect(self.convert)
         layout.addWidget(self.convert_button)
 
+        self.open_mp3_button = QPushButton("Open MP3", self)
+        self.open_mp3_button.clicked.connect(self.open_mp3)
+        layout.addWidget(self.open_mp3_button)
+
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
@@ -104,19 +91,22 @@ class PDFtoMP3Converter(QMainWindow):
         self.conversion_complete_signal.connect(self.on_conversion_complete)
 
     def check_for_updates(self):
-        response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
-        latest_version = response.json()['tag_name']
+        try:
+            response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
+            latest_version = response.json()['tag_name']
 
-        current_version = 'v1.0.6'  # Replace with your current version
+            current_version = 'v1.0.7'  # Replace with your current version
 
-        if latest_version != current_version:
-            msg_box = QMessageBox(self)
-            msg_box.setWindowTitle("Update available")
-            msg_box.setText(f"A new version ({latest_version}) is available.")
-            download_button = msg_box.addButton("Download", QMessageBox.ActionRole)
-            download_button.clicked.connect(self.open_download_link)
-            msg_box.addButton("Skip for now", QMessageBox.RejectRole)
-            msg_box.exec_()
+            if latest_version != current_version:
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Update available")
+                msg_box.setText(f"A new version ({latest_version}) is available.")
+                download_button = msg_box.addButton("Download", QMessageBox.ActionRole)
+                download_button.clicked.connect(self.open_download_link)
+                msg_box.addButton("Skip for now", QMessageBox.RejectRole)
+                msg_box.exec_()
+        except Exception as e:
+            print(f"Error checking for updates: {e}")
 
     def open_download_link(self):
         QDesktopServices.openUrl(QUrl("https://github.com/IPandral/PDF-to-MP3-UI/releases/latest"))
@@ -139,7 +129,7 @@ class PDFtoMP3Converter(QMainWindow):
         self.pdf_path_label.setText(f"Selected PDF: {os.path.basename(url)}")
 
         # Set the output directory to the directory of the input file if no output directory has been selected yet
-        if not hasattr(self, 'output_dir_path') or not self.output_dir_path:
+        if not self.output_dir_path:
             self.output_dir_path = os.path.dirname(url)
             self.output_path_label.setText(f"Output Folder: {os.path.dirname(url)}")
 
@@ -150,7 +140,7 @@ class PDFtoMP3Converter(QMainWindow):
             self.pdf_file_path = pdf_file
 
             # Set the output directory to the directory of the input file if no output directory has been selected yet
-            if not hasattr(self, 'output_dir_path') or not self.output_dir_path:
+            if not self.output_dir_path:
                 self.output_dir_path = os.path.dirname(pdf_file)
                 self.output_path_label.setText(f"Output Folder: {os.path.dirname(pdf_file)}")
 
@@ -161,7 +151,7 @@ class PDFtoMP3Converter(QMainWindow):
             self.pdf_file_path = folder_path
 
             # Set the output directory to the selected folder if no output directory has been selected yet
-            if not hasattr(self, 'output_dir_path') or not self.output_dir_path:
+            if not self.output_dir_path:
                 self.output_dir_path = folder_path
                 self.output_path_label.setText(f"Output Folder: {folder_path}")
 
@@ -173,7 +163,7 @@ class PDFtoMP3Converter(QMainWindow):
 
     def clear_fields(self):
         self.pdf_path_label.setText("Select a PDF file")
-        self.pdf_folder_path.setText("Select a folder of PDF's")
+        self.pdf_folder_path.setText("Select a folder of PDFs")
         self.output_path_label.setText("Select Output Folder")
         self.pdf_file_path = ""
         self.output_dir_path = ""
@@ -181,56 +171,59 @@ class PDFtoMP3Converter(QMainWindow):
     def convert(self):
         if self.pdf_file_path and self.output_dir_path:
             self.convert_button.setEnabled(False)  # Disable the button while processing
+            # Run the conversion in a separate thread to avoid freezing the UI
+            conversion_thread = Thread(target=self.run_conversion)
+            conversion_thread.start()
 
+    def run_conversion(self):
+        try:
             # Check if the selected path is a directory
             if os.path.isdir(self.pdf_file_path):
                 # Loop over all PDF files in the directory
                 for filename in os.listdir(self.pdf_file_path):
                     if filename.endswith('.pdf'):
                         pdf_file_path = os.path.join(self.pdf_file_path, filename)
-                        # Run the conversion in a separate thread to avoid freezing the UI
-                        conversion_thread = Thread(target=self.convert_pdf_to_mp3, args=(pdf_file_path, self.output_dir_path))
-                        conversion_thread.start()
+                        self.convert_pdf_to_mp3(pdf_file_path, self.output_dir_path)
             else:
-                # Run the conversion in a separate thread to avoid freezing the UI
-                conversion_thread = Thread(target=self.convert_pdf_to_mp3, args=(self.pdf_file_path, self.output_dir_path))
-                conversion_thread.start()
+                self.convert_pdf_to_mp3(self.pdf_file_path, self.output_dir_path)
+        except Exception as e:
+            self.conversion_complete_signal.emit(str(e))
+        finally:
+            self.convert_button.setEnabled(True)  # Re-enable the button after processing
 
     def convert_pdf_to_mp3(self, pdf_path, output_dir):
         try:
-            speaker = pyttsx3.init()
+            print(f"Starting conversion for: {pdf_path}")
             pdf_file = os.path.basename(pdf_path)
-            pdf_file_name = os.path.splitext(pdf_file)[0]  # Get the file name without the extension
+            pdf_file_name = os.path.splitext(pdf_file)[0]
 
-            # Create a single output directory for all conversions
-            output_dir_name = "Converted_PDFs"
-            output_dir_path = os.path.join(output_dir, output_dir_name)
-            counter = 1
-            while os.path.exists(output_dir_path):
-                output_dir_path = os.path.join(output_dir, f"{output_dir_name}_{counter}")
-                counter += 1
-            os.makedirs(output_dir_path, exist_ok=True)
+            output_dir_path = os.path.join(output_dir, "Converted_PDFs")
+            if not os.path.exists(output_dir_path):
+                os.makedirs(output_dir_path, exist_ok=True)
+            print(f"Output directory: {output_dir_path}")
+
+            audio_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.mp3')
+            transcript_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.txt')
+            print(f"Audio file path: {audio_file_path}")
+            print(f"Transcript file path: {transcript_file_path}")
 
             with open(pdf_path, 'rb') as book:
                 pdfReader = PdfReader(book)
-                text = ''
-                for page in pdfReader.pages:
-                    text += page.extract_text() or ''  # Add or '' to handle None return on empty pages
+                text = ''.join(page.extract_text() or '' for page in pdfReader.pages)
+            print(f"Extracted text length: {len(text)}")
 
-            # Save the audio file in the output directory
-            audio_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.mp3')
-            speaker.save_to_file(text, audio_file_path)
-            speaker.runAndWait()
+            tts = gTTS(text)
+            tts.save(audio_file_path)
+            print(f"Audio file saved: {audio_file_path}")
 
-            # Save the transcript in the output directory
-            transcript_file_path = os.path.join(output_dir_path, f'{pdf_file_name}.txt')
             with open(transcript_file_path, 'w', encoding='utf-8') as transcript_file:
                 transcript_file.write(text)
+            print(f"Transcript file saved: {transcript_file_path}")
 
-            # Emit the completion signal with the path of the output directory
             self.conversion_complete_signal.emit(output_dir_path)
         except Exception as e:
-            self.conversion_complete_signal.emit(str(e))  # Emit the error
+            print(f"Error during conversion: {e}")
+            self.conversion_complete_signal.emit(str(e))
 
     def on_conversion_complete(self, output_dir_path):
         result = QMessageBox.question(self, "Conversion Complete", "The conversion is complete. Do you want to open the audio player?", QMessageBox.Yes | QMessageBox.No)
@@ -242,6 +235,8 @@ class PDFtoMP3Converter(QMainWindow):
                 audio_file_path = os.path.join(output_dir_path, f'{base_name}.mp3')
                 self.audio_player_window = AudioPlayerWindow(audio_file_path)
                 self.audio_player_window.show()
+        else:
+            self.convert_button.setEnabled(True)
 
     def open_output_folder(self, path):
         if sys.platform == 'win32':
@@ -254,15 +249,23 @@ class PDFtoMP3Converter(QMainWindow):
     def open_user_manual(self):
         webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/wiki/User-Manual-for-PDF-to-MP3-Converter')
 
+    def open_mp3(self):
+        file_dialog = QFileDialog(self)
+        file_dialog.setNameFilter("MP3 files (*.mp3)")
+        if file_dialog.exec_():
+            file_path = file_dialog.selectedFiles()[0]
+            self.audio_player_window = AudioPlayerWindow(file_path)
+            self.audio_player_window.show()
+
 class AudioPlayerWindow(QMainWindow):
-    def __init__(self, audio_file_path, parent=None):
+    def __init__(self, audio_file_path=None, parent=None):
         super().__init__(parent)
 
         self.media_player = vlc.MediaPlayer()
         self.audio_file_path = audio_file_path
 
         self.setWindowTitle("Audio Player")
-        self.setGeometry(300, 300, 300, 200)
+        self.setGeometry(300, 300, 300, 300)
 
         layout = QVBoxLayout()
 
@@ -293,9 +296,23 @@ class AudioPlayerWindow(QMainWindow):
         self.volume_slider.valueChanged.connect(self.set_volume)
         layout.addWidget(self.volume_slider)
 
+        self.speed_controls = QLabel("Playback Speed Controls", self)
+        layout.addWidget(self.speed_controls)
+
+        # Speed slider
+        self.speed_slider = QSlider(Qt.Horizontal, self)
+        self.speed_slider.setMinimum(50)  # 0.5x speed
+        self.speed_slider.setMaximum(200)  # 2.0x speed
+        self.speed_slider.setValue(100)  # 1.0x speed
+        self.speed_slider.valueChanged.connect(self.set_speed)
+        layout.addWidget(self.speed_slider)
+
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+        if self.audio_file_path:
+            self.media_player.set_media(vlc.Media(self.audio_file_path))
 
     def toggle_audio_playback(self):
         if self.media_player.is_playing():
@@ -327,6 +344,10 @@ class AudioPlayerWindow(QMainWindow):
     def set_volume(self, volume):
         self.media_player.audio_set_volume(volume)
 
+    def set_speed(self, speed):
+        rate = speed / 100.0
+        self.media_player.set_rate(rate)
+
     def closeEvent(self, event):
         # This method is called when the window is closed
         if self.media_player.is_playing():
@@ -336,7 +357,6 @@ class AudioPlayerWindow(QMainWindow):
 if __name__ == '__main__':
     # Create a QApplication instance and apply the stylesheet
     app = QApplication(sys.argv)
-    app.setStyleSheet(stylesheet)
 
     # Create an instance of your application and show it
     window = PDFtoMP3Converter()
@@ -345,4 +365,4 @@ if __name__ == '__main__':
     # Run the application
     sys.exit(app.exec_())
 
-#Last updated: Tuesday, 02. January 2024 22:26, +08:00
+# Last updated: Tuesday, 14. May 2024 11:15, +08:00
