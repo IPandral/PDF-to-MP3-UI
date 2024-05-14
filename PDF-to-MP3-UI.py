@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBo
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 import vlc
-from gtts import gTTS  # Importing the gTTS library
+from gtts import gTTS
 
 class PDFtoMP3Converter(QMainWindow):
     conversion_complete_signal = pyqtSignal(str)  # Signal to indicate conversion is complete
@@ -20,7 +20,7 @@ class PDFtoMP3Converter(QMainWindow):
         self.check_for_updates()
         self.setAcceptDrops(True)
         self.setWindowTitle("PDF to MP3")
-        self.setGeometry(100, 100, 280, 170)
+        self.setGeometry(100, 100, 280, 220)
 
         layout = QVBoxLayout()
 
@@ -76,6 +76,10 @@ class PDFtoMP3Converter(QMainWindow):
         self.convert_button = QPushButton("Convert", self)
         self.convert_button.clicked.connect(self.convert)
         layout.addWidget(self.convert_button)
+
+        self.open_mp3_button = QPushButton("Open MP3", self)
+        self.open_mp3_button.clicked.connect(self.open_mp3)
+        layout.addWidget(self.open_mp3_button)
 
         container = QWidget()
         container.setLayout(layout)
@@ -190,7 +194,6 @@ class PDFtoMP3Converter(QMainWindow):
     def convert_pdf_to_mp3(self, pdf_path, output_dir):
         try:
             print(f"Starting conversion for: {pdf_path}")
-
             pdf_file = os.path.basename(pdf_path)
             pdf_file_name = os.path.splitext(pdf_file)[0]
 
@@ -209,8 +212,7 @@ class PDFtoMP3Converter(QMainWindow):
                 text = ''.join(page.extract_text() or '' for page in pdfReader.pages)
             print(f"Extracted text length: {len(text)}")
 
-            # Use gTTS for text-to-speech
-            tts = gTTS(text=text, lang='en')
+            tts = gTTS(text)
             tts.save(audio_file_path)
             print(f"Audio file saved: {audio_file_path}")
 
@@ -247,15 +249,23 @@ class PDFtoMP3Converter(QMainWindow):
     def open_user_manual(self):
         webbrowser.open('https://github.com/IPandral/PDF-to-MP3-UI/wiki/User-Manual-for-PDF-to-MP3-Converter')
 
+    def open_mp3(self):
+        file_dialog = QFileDialog(self)
+        file_dialog.setNameFilter("MP3 files (*.mp3)")
+        if file_dialog.exec_():
+            file_path = file_dialog.selectedFiles()[0]
+            self.audio_player_window = AudioPlayerWindow(file_path)
+            self.audio_player_window.show()
+
 class AudioPlayerWindow(QMainWindow):
-    def __init__(self, audio_file_path, parent=None):
+    def __init__(self, audio_file_path=None, parent=None):
         super().__init__(parent)
 
         self.media_player = vlc.MediaPlayer()
         self.audio_file_path = audio_file_path
 
         self.setWindowTitle("Audio Player")
-        self.setGeometry(300, 300, 300, 200)
+        self.setGeometry(300, 300, 300, 300)
 
         layout = QVBoxLayout()
 
@@ -286,9 +296,23 @@ class AudioPlayerWindow(QMainWindow):
         self.volume_slider.valueChanged.connect(self.set_volume)
         layout.addWidget(self.volume_slider)
 
+        self.speed_controls = QLabel("Playback Speed Controls", self)
+        layout.addWidget(self.speed_controls)
+
+        # Speed slider
+        self.speed_slider = QSlider(Qt.Horizontal, self)
+        self.speed_slider.setMinimum(50)  # 0.5x speed
+        self.speed_slider.setMaximum(200)  # 2.0x speed
+        self.speed_slider.setValue(100)  # 1.0x speed
+        self.speed_slider.valueChanged.connect(self.set_speed)
+        layout.addWidget(self.speed_slider)
+
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+        if self.audio_file_path:
+            self.media_player.set_media(vlc.Media(self.audio_file_path))
 
     def toggle_audio_playback(self):
         if self.media_player.is_playing():
@@ -319,6 +343,10 @@ class AudioPlayerWindow(QMainWindow):
 
     def set_volume(self, volume):
         self.media_player.audio_set_volume(volume)
+
+    def set_speed(self, speed):
+        rate = speed / 100.0
+        self.media_player.set_rate(rate)
 
     def closeEvent(self, event):
         # This method is called when the window is closed
