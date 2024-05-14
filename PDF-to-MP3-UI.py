@@ -95,7 +95,7 @@ class PDFtoMP3Converter(QMainWindow):
             response = requests.get('https://api.github.com/repos/IPandral/PDF-to-MP3-UI/releases/latest')
             latest_version = response.json()['tag_name']
 
-            current_version = 'v1.0.6'  # Replace with your current version
+            current_version = 'v1.0.7'  # Replace with your current version
 
             if latest_version != current_version:
                 msg_box = QMessageBox(self)
@@ -365,4 +365,4 @@ if __name__ == '__main__':
     # Run the application
     sys.exit(app.exec_())
 
-# Last updated: Tuesday, 02. January 2024 22:26, +08:00
+# Last updated: Tuesday, 14. May 2024 11:15, +08:00

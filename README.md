@@ -14,12 +14,41 @@ The application offers a straightforward UI where users can:
 
 Upon completion, the application will automatically open the output folder, displaying the newly created MP3 file and its corresponding text transcript.
 
+## macOS Support
+
+We are pleased to announce that PDF-to-MP3-UI now supports macOS!
+
+### macOS Installation Instructions
+
+1. **Download the `.dmg` file:**
+   Download the latest release from the [releases page](https://github.com/IPandral/PDF-to-MP3-UI/releases).
+
+2. **Open the `.dmg` file:**
+   Double-click the downloaded `.dmg` file to open it.
+
+3. **Drag the application to the Applications folder:**
+   Drag the `PDFtoMP3UI.app` to the Applications folder to install it.
+
+4. **Run the application:**
+   Navigate to the Applications folder and double-click `PDFtoMP3UI.app` to launch the application.
+
 ## Known Issues
-DOES NOT SUPPORT MACOS: i am trying my hardest to fix this i have never had a mac before so i only have just got my hands on one give me a couple of weeks to make sure it is compatable on both mac and windows
+
+### Windows
+- Ensure you have the necessary permissions to run the application and access files.
+
+### macOS
+- First-time users might need to allow the application to run via **System Preferences > Security & Privacy > General**, then click "Open Anyway" for `PDFtoMP3UI`.
 
 ## Usage
 
+### Windows
+
 Simply run the `PDF-to-MP3-UI.exe` executable file, and follow the on-screen instructions to select a PDF and an output directory. The rest is handled by the application.
+
+### macOS
+
+Run the `PDFtoMP3UI.app` from your Applications folder and follow the on-screen instructions to select a PDF and an output directory. The rest is handled by the application.
 
 ## License
 

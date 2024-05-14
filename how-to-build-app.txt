@@ -1,0 +1,24 @@
+Windows:
+
+
+Mac:
+# Step 1: Install PyInstaller
+pip install pyinstaller
+
+# Step 2: Package Your Application
+pyinstaller --windowed --name "PDFtoMP3UI" PDFtoMP3UI.py
+
+# Step 3: Verify the .app File
+ls dist/
+
+# Step 4: Create a Temporary Directory
+mkdir -p /tmp/PDFtoMP3UI
+
+# Step 5: Copy the .app to the Temporary Directory
+cp -R dist/PDFtoMP3UI.app /tmp/PDFtoMP3UI/
+
+# Step 6: Create the .dmg File
+hdiutil create -volname "PDFtoMP3UI" -srcfolder /tmp/PDFtoMP3UI -ov -format UDZO PDFtoMP3UI.dmg
+
+# Step 7: Clean Up
+rm -rf /tmp/PDFtoMP3UI
