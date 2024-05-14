@@ -1,5 +1,6 @@
 Windows:
-
+Step 1: run pytoexe
+python -m auto_py_to_exe
 
 Mac:
 # Step 1: Install PyInstaller
