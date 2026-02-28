@@ -1,59 +1,106 @@
 # PDF-to-MP3-UI
 
-This repository contains the PDF-to-MP3 Converter application with a user interface (UI). It allows users to convert the text content of PDF files into spoken MP3 audio files. This version provides a graphical interface for ease of use, as an alternative to the [command-line version](https://github.com/IPandral/PDF-to-MP3-CLI).
+PDF-to-MP3-UI is a desktop app that converts PDF text into MP3 audio using a simple graphical interface.
 
-The tool is designed to aid individuals who prefer auditory learning or those who may have visual impairments, as well as professionals who wish to listen to content while engaged in other activities.
+It is designed for users who prefer listening to written content, including accessibility and productivity use cases.
 
-## How it Works
+---
 
-The application offers a straightforward UI where users can:
+## Features
 
-1. Select a PDF file through a file dialog.
-2. Choose an output directory where the MP3 and text files will be saved.
-3. Click "Convert" to initiate the conversion process.
+- Convert a single PDF to MP3
+- Convert a folder of PDFs
+- Save generated MP3 files to a selected output folder
+- Open output folder after conversion
+- Built-in audio playback controls in the app
 
-Upon completion, the application will automatically open the output folder, displaying the newly created MP3 file and its corresponding text transcript.
+---
 
-## macOS Support
+## Downloads
 
-We are pleased to announce that PDF-to-MP3-UI now supports macOS!
+Get the latest packaged app from the **[Releases page](https://github.com/IPandral/PDF-to-MP3-UI/releases)**.
 
-### macOS Installation Instructions
+---
 
-1. **Download the `.dmg` file:**
-   Download the latest release from the [releases page](https://github.com/IPandral/PDF-to-MP3-UI/releases).
+## Prerequisites
 
-2. **Open the `.dmg` file:**
-   Double-click the downloaded `.dmg` file to open it.
+### Windows (Important)
 
-3. **Drag the application to the Applications folder:**
-   Drag the `PDFtoMP3UI.app` to the Applications folder to install it.
+This app uses VLC runtime libraries for audio playback.
 
-4. **Run the application:**
-   Navigate to the Applications folder and double-click `PDFtoMP3UI.app` to launch the application.
+Before running `PDF-to-MP3-UI.exe`, make sure:
 
-## Known Issues
+1. **VLC Media Player is installed**  
+   Download from the official site: [https://www.videolan.org/vlc/](https://www.videolan.org/vlc/)
+2. **Architecture matches**  
+   - 64-bit app ↔ 64-bit VLC  
+   - 32-bit app ↔ 32-bit VLC
+3. `libvlc.dll` is present in your VLC installation directory (for example):
+   - `C:\Program Files\VideoLAN\VLC\libvlc.dll`
+   - `C:\Program Files (x86)\VideoLAN\VLC\libvlc.dll`
+   If you installed VLC to a custom location, ensure `libvlc.dll` exists in that install directory.
 
-### Windows
-- Ensure you have the necessary permissions to run the application and access files.
+If VLC is not installed or not found, the app may fail to start with a `libvlc.dll` error.
 
 ### macOS
-- First-time users might need to allow the application to run via **System Preferences > Security & Privacy > General**, then click "Open Anyway" for `PDFtoMP3UI`.
+
+Use the `.dmg` from Releases and drag `PDFtoMP3UI.app` into Applications.
+
+If blocked on first launch, allow it via:  
+**System Settings/Preferences → Privacy & Security → Open Anyway**
+
+---
 
 ## Usage
 
 ### Windows
 
-Simply run the `PDF-to-MP3-UI.exe` executable file, and follow the on-screen instructions to select a PDF and an output directory. The rest is handled by the application.
+1. Install VLC (see prerequisites above).
+2. Run `PDF-to-MP3-UI.exe`.
+3. Select a PDF file (or PDF folder).
+4. Select an output folder.
+5. Start conversion.
 
 ### macOS
 
-Run the `PDFtoMP3UI.app` from your Applications folder and follow the on-screen instructions to select a PDF and an output directory. The rest is handled by the application.
-
-## License
-
-This project is open-source and licensed under the MIT License. See the [LICENSE](LICENSE) file for license rights and limitations.
+1. Open `PDFtoMP3UI.app`.
+2. Select a PDF file (or PDF folder).
+3. Select an output folder.
+4. Start conversion.
 
 ---
 
-Prefer using the command line? Check out the [PDF-to-MP3-CLI](https://github.com/IPandral/PDF-to-MP3-CLI) version for a terminal-based alternative.
+## Troubleshooting
+
+### Error: `Could not find module ... libvlc.dll`
+
+- Install VLC from VideoLAN.
+- Ensure VLC architecture matches the app.
+- Restart Windows after installing VLC.
+- Confirm `libvlc.dll` exists in the VLC install directory.
+
+### App opens but conversion fails
+
+- Check the PDF is readable and not corrupted.
+- Check output folder write permissions.
+- Try a different output folder.
+
+---
+
+## Known Issues
+
+- On macOS, first launch may require manual security approval.
+- On Windows, missing VLC runtime prevents audio features and can block startup in some builds.
+
+---
+
+## Related Project
+
+Prefer terminal usage?  
+See **[PDF-to-MP3-CLI](https://github.com/IPandral/PDF-to-MP3-CLI)**.
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
